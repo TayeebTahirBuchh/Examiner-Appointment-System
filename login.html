@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Examiner Appointment System</title>
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Examiner Appointment System</h1>
+        <div class="form-box" id="login-box">
+            <h2>Login</h2>
+            <form action="login.php" method="POST">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <div class="password-container">
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <span class="eye" onclick="togglePassword()">👁️</span>
+                    </div>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            <p>New user? <a href="index.html">Register here</a></p>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            const password = document.getElementById('password');
+            const eye = document.querySelector('.eye');
+            if (password.type === 'password') {
+                password.type = 'text';
+                eye.textContent = '🙈';
+            } else {
+                password.type = 'password';
+                eye.textContent = '👁️';
+            }
+        }
+
+        // Display error/success messages from query parameters
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const msg = urlParams.get('msg');
+            if (msg) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.textContent = msg;
+                document.querySelector('.form-box').prepend(messageDiv);
+            }
+        };
+    </script>
+</body>
+</html>
