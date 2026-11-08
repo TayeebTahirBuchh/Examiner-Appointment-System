@@ -1,19 +1,5 @@
 <?php
-// Apply safer session settings before starting the session.
-ini_set('session.use_strict_mode', '1');
-ini_set('session.use_only_cookies', '1');
-ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_samesite', 'Lax');
-$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'secure' => $https,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-session_start();
-
+require_once __DIR__ . '/session_bootstrap.php';
 require_once __DIR__ . '/db_connect.php';
 
 function redirectToLogin(string $message): void
@@ -28,70 +14,94 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $username = trim($_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
+$ipAddress = substr((string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'), 0, 45);
 
 if ($username === '' || $password === '' || strlen($username) > 80) {
     $conn->close();
     redirectToLogin('Invalid username or password.');
 }
 
-$stmt = $conn->prepare(
-    'SELECT id, username, password, role FROM users WHERE username = ? LIMIT 1'
-);
-if (!$stmt) {
-    error_log('Login query preparation failed: ' . $conn->error);
+// Persistent rate limit: maximum 5 failed attempts per username/IP in 15 minutes.
+try {
+    $rate = $conn->prepare(
+        'SELECT COUNT(*) AS attempts FROM login_attempts
+         WHERE username = ? AND ip_address = ?
+           AND attempted_at >= (NOW() - INTERVAL 15 MINUTE)'
+    );
+    $rate->bind_param('ss', $username, $ipAddress);
+    $rate->execute();
+    $attempts = (int)($rate->get_result()->fetch_assoc()['attempts'] ?? 0);
+    $rate->close();
+
+    if ($attempts >= 5) {
+        $conn->close();
+        http_response_code(429);
+        exit('Too many unsuccessful login attempts. Please wait 15 minutes before trying again.');
+    }
+
+    $stmt = $conn->prepare(
+        'SELECT id, username, password, role FROM users WHERE username = ? LIMIT 1'
+    );
+    $stmt->bind_param('s', $username);
+    $stmt->execute();
+    $user = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    $validRoles = ['teacher', 'competent_authority', 'admin'];
+    $validCredentials = $user
+        && password_verify($password, $user['password'])
+        && in_array($user['role'], $validRoles, true);
+
+    if ($validCredentials && $user['role'] === 'teacher') {
+        $teacherStmt = $conn->prepare(
+            'SELECT status FROM teachers WHERE id = ? LIMIT 1'
+        );
+        $teacherStmt->bind_param('i', $user['id']);
+        $teacherStmt->execute();
+        $teacher = $teacherStmt->get_result()->fetch_assoc();
+        $teacherStmt->close();
+        $validCredentials = $teacher && $teacher['status'] === 'approved';
+    }
+
+    if (!$validCredentials) {
+        $record = $conn->prepare(
+            'INSERT INTO login_attempts (username, ip_address) VALUES (?, ?)'
+        );
+        $record->bind_param('ss', $username, $ipAddress);
+        $record->execute();
+        $record->close();
+        $conn->close();
+        redirectToLogin('Invalid username or password, or account not approved.');
+    }
+
+    $clear = $conn->prepare(
+        'DELETE FROM login_attempts WHERE username = ? AND ip_address = ?'
+    );
+    $clear->bind_param('ss', $username, $ipAddress);
+    $clear->execute();
+    $clear->close();
+
+    session_regenerate_id(true);
+    $_SESSION = [
+        'user_id' => (int)$user['id'],
+        'role' => $user['role'],
+        'authenticated_at' => time(),
+    ];
+
     $conn->close();
+    $destinations = [
+        'teacher' => 'teacher_dashboard.php',
+        'competent_authority' => 'competent_authority_dashboard.php',
+        'admin' => 'admin_dashboard.php',
+    ];
+    header('Location: ' . $destinations[$user['role']]);
+    exit();
+} catch (Throwable $exception) {
+    error_log('Login processing failed: ' . $exception->getMessage());
+    if (isset($conn) && $conn instanceof mysqli) {
+        $conn->close();
+    }
     http_response_code(500);
     exit('A server error occurred. Please try again later.');
 }
-
-$stmt->bind_param('s', $username);
-$stmt->execute();
-$user = $stmt->get_result()->fetch_assoc();
-$stmt->close();
-
-$validRoles = ['teacher', 'competent_authority', 'admin'];
-if (!$user || !password_verify($password, $user['password']) ||
-    !in_array($user['role'], $validRoles, true)) {
-    $conn->close();
-    redirectToLogin('Invalid username or password.');
-}
-
-if ($user['role'] === 'teacher') {
-    $teacherStmt = $conn->prepare(
-        'SELECT status FROM teachers WHERE id = ? LIMIT 1'
-    );
-    if (!$teacherStmt) {
-        error_log('Teacher status query preparation failed: ' . $conn->error);
-        $conn->close();
-        http_response_code(500);
-        exit('A server error occurred. Please try again later.');
-    }
-
-    $teacherStmt->bind_param('i', $user['id']);
-    $teacherStmt->execute();
-    $teacher = $teacherStmt->get_result()->fetch_assoc();
-    $teacherStmt->close();
-
-    if (!$teacher || $teacher['status'] !== 'approved') {
-        $conn->close();
-        redirectToLogin('Your account is awaiting approval or is not currently active.');
-    }
-}
-
-// Rotate the session ID after successful authentication.
-session_regenerate_id(true);
-$_SESSION['user_id'] = (int) $user['id'];
-$_SESSION['role'] = $user['role'];
-$_SESSION['authenticated_at'] = time();
-
-$conn->close();
-
-$destinations = [
-    'teacher' => 'teacher_dashboard.php',
-    'competent_authority' => 'competent_authority_dashboard.php',
-    'admin' => 'admin_dashboard.php',
-];
-
-header('Location: ' . $destinations[$user['role']]);
-exit();
 ?>

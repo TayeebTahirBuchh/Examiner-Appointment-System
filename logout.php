@@ -1,20 +1,17 @@
 <?php
-ini_set('session.use_strict_mode', '1');
-ini_set('session.use_only_cookies', '1');
-ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_samesite', 'Lax');
-$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'secure' => $https,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-session_start();
+require_once __DIR__ . '/session_bootstrap.php';
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    header('Allow: POST');
+    exit('Use the logout form to sign out.');
+}
+if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
+    http_response_code(403);
+    exit('Security check failed. Refresh the page and try again.');
+}
 
 $_SESSION = [];
-
 if (ini_get('session.use_cookies')) {
     $params = session_get_cookie_params();
     setcookie(session_name(), '', [
@@ -26,7 +23,6 @@ if (ini_get('session.use_cookies')) {
         'samesite' => $params['samesite'] ?? 'Lax',
     ]);
 }
-
 session_destroy();
 header('Location: login.html?msg=' . urlencode('Logged out successfully.'));
 exit();
