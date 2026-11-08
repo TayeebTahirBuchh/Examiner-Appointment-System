@@ -1,6 +1,6 @@
 <?php
-session_start();
-require_once 'db_connect.php';
+require_once __DIR__ . '/session_bootstrap.php';
+require_once __DIR__ . '/db_connect.php';
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'teacher') {
     header('Location: login.html?msg=' . urlencode('Unauthorized access'));
@@ -404,7 +404,12 @@ $initialSection = isset($_POST['submit_bill']) ? 'psf8-bill'
                 <li><a href="#assigned-papers" data-section="assigned-papers">Assigned Papers</a></li>
                 <li><a href="#submit-papers" data-section="submit-papers">Submit Papers</a></li>
                 <li><a href="#psf8-bill" data-section="psf8-bill">PSF-8 Bill</a></li>
-                <li><a href="logout.php" class="btn btn-logout">Logout</a></li>
+                <li>
+                    <form action="logout.php" method="POST" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
+                        <button type="submit" class="btn btn-logout">Logout</button>
+                    </form>
+                </li>
             </ul>
         </nav>
     </aside>
