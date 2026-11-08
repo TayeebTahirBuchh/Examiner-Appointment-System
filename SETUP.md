@@ -1,123 +1,107 @@
-# Setup Guide
+Setup Guide
 
 This guide explains how to run the Examiner Appointment System locally using XAMPP.
 
-## 1. Requirements
+1. Requirements
 
-- XAMPP with Apache, PHP, and MySQL/MariaDB
-- A web browser
-- The project files from this repository
+* XAMPP with Apache, PHP, and MySQL/MariaDB
+* A web browser
+* Project files from this repository
 
-## 2. Copy the project
+2. Copy the project
 
 1. Download or clone this repository.
-2. Place the project folder inside XAMPP's `htdocs` directory.
+2. Place the project folder inside XAMPP’s htdocs directory.
 
 Example:
 
-```text
 C:\xampp\htdocs\Examiner-Appointment-System\
-```
 
-The folder name can differ, but use the matching URL in your browser.
+3. Start XAMPP
 
-## 3. Start XAMPP services
+Open XAMPP Control Panel and start:
 
-Open the XAMPP Control Panel and start:
+* Apache
+* MySQL
 
-- Apache
-- MySQL
+4. Import the database schema
 
-## 4. Create the database by importing the schema
+1. Open http://localhost/phpmyadmin.
+2. Select the Import tab.
+3. Choose schema.sql from the root of the project folder.
+4. Click Import or Go.
 
-1. Open `http://localhost/phpmyadmin`.
-2. Select the **Import** tab.
-3. Choose the file named **`schema.sql` from the root of the project folder**.
-4. Click **Import** or **Go**.
+The schema creates the examiner_system database and its initial tables.
 
-The schema creates the `examiner_system` database and its initial tables.
+Important: The file is named schema.sql and is located directly in the repository root. Do not look for database/schema.sql.
 
-**Correct file path:** `Examiner-Appointment-System/schema.sql`
+5. Configure the database connection
 
-Do not look for `database/schema.sql`. The schema file is in the repository root.
+Open db_connect.php and confirm the settings match your XAMPP configuration.
 
-## 5. Check the database connection
+Typical local XAMPP settings:
 
-Open `db_connect.php` and confirm the local connection settings match your XAMPP setup.
-
-A typical local XAMPP configuration is:
-
-```php
 $host = "localhost";
 $username = "root";
 $password = "";
 $database = "examiner_system";
-```
 
-If your MySQL account has a password or uses a different host/port, update the settings accordingly.
+If your MySQL account uses a password or a different port, update the settings accordingly.
 
-For a public deployment, do not keep production credentials directly in a publicly accessible repository. Use environment variables or a private configuration file outside the web root.
+For production deployment, do not store production credentials in publicly committed source code. Use environment variables or a private configuration file.
 
-## 6. Open the application
+6. Open the application
 
-If the project folder is named `Examiner-Appointment-System`, open:
+If your project folder is named Examiner-Appointment-System, visit:
 
-```text
 http://localhost/Examiner-Appointment-System/
-```
 
-If the project uses a different folder name, replace the URL path accordingly.
+7. Create an administrator account
 
-## 7. Administrator account
+The schema does not provide a known default administrator password.
 
-The schema does not include a known default administrator password.
+Generate a password hash locally using PHP:
 
-Create an administrator account using a securely generated password hash and insert the account into the `users` table with the `admin` role. Use PHP's `password_hash()` to generate the hash, for example:
-
-```php
 <?php
 echo password_hash("Choose-A-Strong-Password", PASSWORD_DEFAULT);
-```
 
-Run this temporary script locally, copy the generated hash, and insert the account using phpMyAdmin. Delete the temporary script immediately after use.
+Copy the generated hash and insert the administrator account through phpMyAdmin:
 
-Example SQL (replace the sample values with your own):
-
-```sql
 INSERT INTO users (username, password, role)
 VALUES ('admin', 'PASTE_PASSWORD_HASH_HERE', 'admin');
-```
 
-Never store a plain-text password in the database.
+Replace the placeholder with your generated hash. Never store a plain-text password.
 
-## 8. Important notes
+Delete the temporary PHP script after generating the hash.
 
-- The included `schema.sql` is an inferred fresh-install schema based on the application's code. It is not the original database export.
-- Importing the schema creates tables but does not restore existing users, teachers, assignments, or notifications.
-- If you already have a database containing important data, back it up before importing or changing any schema.
-- The project may require additional configuration or code fixes depending on the exact PHP and MySQL versions.
-- Confirm that the TCPDF library exists at the path expected by `teacher_dashboard.php` before testing PDF generation.
+8. Important notes
 
-## Troubleshooting
+* The included schema.sql is an inferred fresh-install schema based on the application’s PHP code. It is not an export of the original database.
+* Importing it creates the database structure but does not restore previous users, teachers, assignments, or notifications.
+* Back up any existing database before importing or changing its schema.
+* Confirm that TCPDF exists at the path expected by teacher_dashboard.php before testing PDF generation.
+* Review upload validation, authorization, and session security before deploying publicly.
 
-### Database connection failed
+Troubleshooting
 
-- Confirm MySQL is running in XAMPP.
-- Confirm the database name is `examiner_system`.
-- Check the username, password, host, and port in `db_connect.php`.
+Database connection failed
 
-### Unknown database
+* Confirm MySQL is running.
+* Confirm the database name is examiner_system.
+* Check the credentials and port in db_connect.php.
 
-Import the root-level `schema.sql` file through phpMyAdmin.
+Unknown database
 
-### Login does not work
+Import the root-level schema.sql file through phpMyAdmin.
 
-- Confirm the user exists in the `users` table.
-- Confirm the stored password is a hash created with `password_hash()`.
-- Confirm the role value is one of the roles supported by the schema and application.
-- Teacher accounts may require approval, depending on the registration workflow.
+Login does not work
 
-### PDF generation fails
+* Confirm the user exists in the users table.
+* Confirm the password is stored as a hash created with password_hash().
+* Confirm the account role is supported by the application.
+* Teacher accounts may require approval.
 
-- Confirm TCPDF is present in the repository at the path referenced by the PHP code.
-- Check PHP error logs for missing-file or permission errors.
+PDF generation fails
+
+* Confirm TCPDF is present at the path referenced by the PHP code.
+* Check PHP error logs for missing files or permission errors.
