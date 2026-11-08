@@ -1,107 +1,119 @@
-Setup Guide
+# Setup Guide
 
 This guide explains how to run the Examiner Appointment System locally using XAMPP.
 
-1. Requirements
+## 1. Requirements
 
-* XAMPP with Apache, PHP, and MySQL/MariaDB
-* A web browser
-* Project files from this repository
+- XAMPP with Apache, PHP, and MySQL/MariaDB
+- PHP Fileinfo enabled
+- A web browser
+- TCPDF at `tcpdf/tcpdf_main/tcpdf.php` for PSF-8 PDF generation
 
-2. Copy the project
+## 2. Copy the project
 
-1. Download or clone this repository.
-2. Place the project folder inside XAMPP’s htdocs directory.
+Place the project folder inside XAMPP's `htdocs` directory.
 
 Example:
 
+```text
 C:\xampp\htdocs\Examiner-Appointment-System\
+```
 
-3. Start XAMPP
+## 3. Start XAMPP
 
-Open XAMPP Control Panel and start:
+Start Apache and MySQL in the XAMPP Control Panel.
 
-* Apache
-* MySQL
+## 4. Import the database
 
-4. Import the database schema
+1. Open `http://localhost/phpmyadmin`.
+2. Select **Import**.
+3. Choose `schema.sql` from the repository root.
+4. Click **Import** or **Go**.
 
-1. Open http://localhost/phpmyadmin.
-2. Select the Import tab.
-3. Choose schema.sql from the root of the project folder.
-4. Click Import or Go.
+The schema creates the `examiner_system` database and its initial tables. It is an inferred fresh-install schema, not a backup of original records.
 
-The schema creates the examiner_system database and its initial tables.
+## 5. Configure the database
 
-Important: The file is named schema.sql and is located directly in the repository root. Do not look for database/schema.sql.
+Check `db_connect.php` and ensure the connection settings match your local XAMPP installation.
 
-5. Configure the database connection
+Typical local values:
 
-Open db_connect.php and confirm the settings match your XAMPP configuration.
-
-Typical local XAMPP settings:
-
+```php
 $host = "localhost";
 $username = "root";
 $password = "";
 $database = "examiner_system";
+```
 
-If your MySQL account uses a password or a different port, update the settings accordingly.
+Do not use publicly committed credentials in production.
 
-For production deployment, do not store production credentials in publicly committed source code. Use environment variables or a private configuration file.
+## 6. Configure protected uploads
 
-6. Open the application
+The application stores PDF files in the `Uploads/` directory.
 
-If your project folder is named Examiner-Appointment-System, visit:
+This repository includes `Uploads/.htaccess`, which denies direct web access to uploaded files. Documents must be downloaded through `download_file.php`, which checks the logged-in user's role and assignment ownership.
 
+For Apache:
+
+1. Ensure `AllowOverride` permits `.htaccess` rules for the project.
+2. Ensure Apache's authorization module is enabled.
+3. Keep `Uploads/.htaccess` in place.
+4. Confirm that requesting a file directly under `/Uploads/` returns **403 Forbidden**.
+5. Confirm that an authorized user can download the same file through `download_file.php`.
+
+If using Nginx or IIS, `.htaccess` is not applied. Configure an equivalent server-level rule that denies direct HTTP access to the `Uploads` directory.
+
+The PHP process must have permission to create and write files in `Uploads/`.
+
+## 7. Open the application
+
+If the folder is named `Examiner-Appointment-System`, visit:
+
+```text
 http://localhost/Examiner-Appointment-System/
+```
 
-7. Create an administrator account
+## 8. Create an administrator
 
-The schema does not provide a known default administrator password.
+Generate a password hash locally with PHP:
 
-Generate a password hash locally using PHP:
-
+```php
 <?php
 echo password_hash("Choose-A-Strong-Password", PASSWORD_DEFAULT);
+```
 
-Copy the generated hash and insert the administrator account through phpMyAdmin:
+Insert the generated hash through phpMyAdmin:
 
+```sql
 INSERT INTO users (username, password, role)
 VALUES ('admin', 'PASTE_PASSWORD_HASH_HERE', 'admin');
+```
 
-Replace the placeholder with your generated hash. Never store a plain-text password.
+Replace the placeholder with your generated hash. Never store a plain-text password. Delete the temporary PHP script after use.
 
-Delete the temporary PHP script after generating the hash.
+## 9. Important notes
 
-8. Important notes
+- The `courses` table must contain the department's approved course catalogue before the Competent Authority can assign papers.
+- Teacher accounts must be approved before they can log in.
+- The teacher dashboard expects TCPDF at `tcpdf/tcpdf_main/tcpdf.php`.
+- Test using dummy accounts, sample PDFs, and non-sensitive bank details first.
+- Do not upload real confidential examination papers until direct access to `Uploads/` has been tested and blocked at the web-server level.
+- Back up existing files and databases before replacing application files.
 
-* The included schema.sql is an inferred fresh-install schema based on the application’s PHP code. It is not an export of the original database.
-* Importing it creates the database structure but does not restore previous users, teachers, assignments, or notifications.
-* Back up any existing database before importing or changing its schema.
-* Confirm that TCPDF exists at the path expected by teacher_dashboard.php before testing PDF generation.
-* Review upload validation, authorization, and session security before deploying publicly.
+## Troubleshooting
 
-Troubleshooting
+### Database connection failed
 
-Database connection failed
+Confirm MySQL is running and check the database name and credentials in `db_connect.php`.
 
-* Confirm MySQL is running.
-* Confirm the database name is examiner_system.
-* Check the credentials and port in db_connect.php.
+### Direct URL to an uploaded PDF still opens
 
-Unknown database
+Check that Apache permits `.htaccess` overrides and that `Uploads/.htaccess` exists. If using Nginx or IIS, add a server-level deny rule; `.htaccess` is Apache-specific.
 
-Import the root-level schema.sql file through phpMyAdmin.
+### Protected download says file not found
 
-Login does not work
+Confirm the assignment row contains a relative path like `Uploads/random-name.pdf`, and that the corresponding PDF exists inside the project's `Uploads` directory.
 
-* Confirm the user exists in the users table.
-* Confirm the password is stored as a hash created with password_hash().
-* Confirm the account role is supported by the application.
-* Teacher accounts may require approval.
+### PSF-8 generation fails
 
-PDF generation fails
-
-* Confirm TCPDF is present at the path referenced by the PHP code.
-* Check PHP error logs for missing files or permission errors.
+Confirm TCPDF exists at `tcpdf/tcpdf_main/tcpdf.php` and inspect PHP error logs.

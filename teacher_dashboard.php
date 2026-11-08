@@ -450,7 +450,7 @@ $initialSection = isset($_POST['submit_bill']) ? 'psf8-bill'
                             <td><?= e($assignment['course_code']) ?></td>
                             <td>
                                 <?php if (!empty($assignment['syllabus'])): ?>
-                                    <a href="<?= e($assignment['syllabus']) ?>" target="_blank" rel="noopener">View Syllabus</a>
+                                    <a href="download_file.php?assignment_id=<?= (int) $assignment['id'] ?>&amp;file=syllabus">Download Syllabus</a>
                                 <?php else: ?>—<?php endif; ?>
                             </td>
                             <td><?= e($assignment['due_date']) ?></td>
@@ -458,7 +458,7 @@ $initialSection = isset($_POST['submit_bill']) ? 'psf8-bill'
                             <td class="file-links">
                                 <?php foreach (['question_set1' => 'Set 1', 'question_set2' => 'Set 2', 'marking_key' => 'Marking Key', 'bill_pdf' => 'PSF-8 Bill'] as $field => $label): ?>
                                     <?php if (!empty($assignment[$field])): ?>
-                                        <a href="<?= e($assignment[$field]) ?>" target="_blank" rel="noopener"><?= e($label) ?></a>
+                                        <a href="download_file.php?assignment_id=<?= (int) $assignment['id'] ?>&amp;file=<?= e($field) ?>"><?= e($label) ?></a>
                                     <?php endif; ?>
                                 <?php endforeach; ?>
                                 <?php if (empty($assignment['question_set1']) && empty($assignment['question_set2']) && empty($assignment['marking_key']) && empty($assignment['bill_pdf'])): ?>—<?php endif; ?>

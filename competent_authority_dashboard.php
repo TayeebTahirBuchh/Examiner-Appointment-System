@@ -101,7 +101,7 @@ $assignments = $conn->query(
                                 <td><?= htmlspecialchars($assignment['course_code'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td>
                                     <?php if (!empty($assignment['syllabus'])): ?>
-                                        <a href="<?= htmlspecialchars($assignment['syllabus'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">View syllabus</a>
+                                        <a href="download_file.php?assignment_id=<?= (int) $assignment['id'] ?>&amp;file=syllabus">Download syllabus</a>
                                     <?php endif; ?>
                                 </td>
                                 <td><?= htmlspecialchars((string)$assignment['due_date'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -109,7 +109,7 @@ $assignments = $conn->query(
                                 <td>
                                     <?php foreach (['question_set1' => 'Set 1', 'question_set2' => 'Set 2', 'marking_key' => 'Marking Key', 'bill_pdf' => 'PSF-8 Bill'] as $field => $label): ?>
                                         <?php if (!empty($assignment[$field])): ?>
-                                            <a href="<?= htmlspecialchars($assignment[$field], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></a><br>
+                                            <a href="download_file.php?assignment_id=<?= (int) $assignment['id'] ?>&amp;file=<?= htmlspecialchars($field, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></a><br>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 </td>
