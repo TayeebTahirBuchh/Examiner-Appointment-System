@@ -1,0 +1,27 @@
+EXAMINER APPOINTMENT SYSTEM — DASHBOARD REPLACEMENTS
+
+This ZIP contains complete replacement files for:
+- admin_dashboard.php
+- assign_paper.php
+- competent_authority_dashboard.php
+- teacher_dashboard.php
+- download_file.php
+- login.html
+
+HOW TO UPLOAD ON GITHUB (iPhone)
+1. Open the repository:
+   https://github.com/TayeebTahirBuchh/Examiner-Appointment-System
+2. Open each matching file in the repository.
+3. Use the pencil/Edit button, select all old content, and replace it with the full content of the matching file from this ZIP.
+4. Commit the changes to the main branch.
+5. Do not upload these files into a new folder. They must replace the root-level files.
+
+IMPORTANT
+- session_bootstrap.php, login.php, register.php, logout.php, index.php, and login_attempts.sql are already present from Security Upgrade 2. Keep them.
+- Do not delete or replace the Uploads folder.
+- The legacy index.html registration page should be deleted after verifying index.php works.
+- The login_attempts.sql migration still needs to be imported into the examiner_system database in phpMyAdmin.
+- TCPDF is still required at tcpdf/tcpdf_main/tcpdf.php for PSF-8 PDF generation.
+
+The replacement files use the shared session bootstrap and POST + CSRF-protected logout forms.
+This package has not been live-tested against the user's XAMPP/MySQL environment.

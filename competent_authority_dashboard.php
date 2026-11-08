@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/session_bootstrap.php';
 require_once 'db_connect.php';
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'competent_authority') {
@@ -66,7 +66,12 @@ $assignments = $conn->query(
                 <ul>
                     <li><a href="assign_paper.php">Assign a Paper</a></li>
                     <li><a href="competent_authority_dashboard.php" class="active">Submitted Papers</a></li>
-                    <li><a href="logout.php" class="btn btn-logout">Logout</a></li>
+                    <li>
+                        <form action="logout.php" method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                            <button type="submit" class="btn btn-logout">Logout</button>
+                        </form>
+                    </li>
                 </ul>
             </nav>
         </aside>
