@@ -1,0 +1,8 @@
+# Block direct web access to uploaded examination documents.
+Require all denied
+
+# Compatibility for older Apache versions.
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
