@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'db_connect.php';
+require_once __DIR__ . '/db_connect.php';
 
 if (!isset($_SESSION['user_id'], $_SESSION['role'])) {
     http_response_code(401);
@@ -46,15 +46,13 @@ if (!$assignment) {
     exit('Assignment not found.');
 }
 
-// Teachers may access only documents belonging to their own assignments.
-// Admin and Competent Authority may access documents for departmental review.
 if ($role === 'teacher' && (int) $assignment['teacher_id'] !== (int) $_SESSION['user_id']) {
     http_response_code(403);
     exit('You are not authorized to access this assignment.');
 }
 
 $relativePath = $assignment[$fileField] ?? '';
-if (!is_string($relativePath) || !preg_match('#^Uploads/[A-Za-z0-9_-]+\.pdf$#D', $relativePath)) {
+if (!is_string($relativePath) || !preg_match('#^Uploads/[A-Za-z0-9_-]+\\.pdf$#D', $relativePath)) {
     http_response_code(404);
     exit('File not found.');
 }
@@ -98,9 +96,13 @@ header('Content-Type: application/pdf');
 header('Content-Length: ' . (string) filesize($filePath));
 header('Content-Disposition: attachment; filename="' . $downloadName . '"');
 header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: no-referrer');
 header('Cache-Control: private, no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
 header('Content-Security-Policy: sandbox');
 
+session_write_close();
 readfile($filePath);
 exit();
+?>
